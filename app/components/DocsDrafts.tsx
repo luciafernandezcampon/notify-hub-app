@@ -208,6 +208,8 @@ function DraftCard({
   const previewHtml = useMemo(() => renderMarkdownToHtml(content), [content]);
   const disabled = busy || draft.status === "written";
 
+  const [expanded, setExpanded] = useState(false);
+
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const syncingRef = useRef(false);
@@ -233,103 +235,136 @@ function DraftCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="font-medium text-black dark:text-zinc-50">
-            {draft.title ?? draft.path}
-          </p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{draft.path}</p>
+    <div className="flex flex-col rounded border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full flex-wrap items-center justify-between gap-2 p-4 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-zinc-400 transition-transform dark:text-zinc-500 ${expanded ? "rotate-90" : ""}`}
+          >
+            ▶
+          </span>
+          <div>
+            <p className="font-medium text-black dark:text-zinc-50">
+              {draft.title ?? draft.path}
+            </p>
+            <p className="font-mono text-xs text-zinc-500 dark:text-zinc-400">{draft.path}</p>
+          </div>
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[draft.status]}`}
-        >
-          {STATUS_LABELS[draft.status]}
-        </span>
-      </div>
 
-      {draft.reason && (
-        <p className="text-sm text-zinc-700 dark:text-zinc-300">{draft.reason}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[draft.status]}`}
+          >
+            {STATUS_LABELS[draft.status]}
+          </span>
+          {draft.prNumber && draft.prUrl ? (
+            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800 dark:bg-green-950 dark:text-green-300">
+              PR #{draft.prNumber} creado
+            </span>
+          ) : (
+            <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+              Sin PR
+            </span>
+          )}
+        </div>
+      </button>
+
+      {!expanded && draft.reason && (
+        <p className="truncate px-4 pb-4 text-sm text-zinc-600 dark:text-zinc-400">
+          {draft.reason}
+        </p>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Markdown (editable)
-          </span>
-          <textarea
-            ref={editorRef}
-            onScroll={() => syncScroll(editorRef, previewRef)}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="h-[28rem] w-full resize-y rounded border border-zinc-300 bg-zinc-50 p-2 font-mono text-xs text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
-            disabled={draft.status === "written"}
-          />
-        </div>
+      {expanded && (
+        <div className="flex flex-col gap-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
+          {draft.reason && (
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">{draft.reason}</p>
+          )}
 
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Vista previa HTML
-          </span>
-          <div
-            ref={previewRef}
-            onScroll={() => syncScroll(previewRef, editorRef)}
-            className="markdown-preview h-[28rem] overflow-y-auto rounded border border-zinc-300 bg-zinc-50 p-2 text-sm text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
-        </div>
-      </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                Markdown (editable)
+              </span>
+              <textarea
+                ref={editorRef}
+                onScroll={() => syncScroll(editorRef, previewRef)}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="h-[28rem] w-full resize-y rounded border border-zinc-300 bg-zinc-50 p-2 font-mono text-xs text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
+                disabled={draft.status === "written"}
+              />
+            </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => onAction(draft, "edit", content)}
-          disabled={disabled}
-          className="rounded border border-fuchsia-300 px-3 py-1.5 text-sm text-fuchsia-700 hover:bg-fuchsia-50 disabled:opacity-50 dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950"
-        >
-          Guardar edición
-        </button>
-        <button
-          onClick={() => {
-            if (
-              window.confirm(
-                "Al aceptar este borrador vas a habilitar la creación de un Pull Request en GitHub con este contenido. ¿Confirmás?"
-              )
-            ) {
-              onAction(draft, "accept", content);
-            }
-          }}
-          disabled={disabled}
-          className="rounded bg-fuchsia-600 px-3 py-1.5 text-sm text-white hover:bg-fuchsia-700 disabled:opacity-50"
-        >
-          Aceptar
-        </button>
-        <button
-          onClick={() => onAction(draft, "reject", content)}
-          disabled={disabled}
-          className="rounded bg-rose-900 px-3 py-1.5 text-sm text-white hover:bg-rose-950 disabled:opacity-50"
-        >
-          Rechazar
-        </button>
-        {draft.status === "accepted" && (
-          <button
-            onClick={() => onAction(draft, "write", content)}
-            disabled={busy}
-            className="rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800 disabled:opacity-50"
-          >
-            Crear PR en GitHub
-          </button>
-        )}
-        {draft.status === "written" && draft.prUrl && (
-          <a
-            href={draft.prUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800"
-          >
-            Ver PR #{draft.prNumber}
-          </a>
-        )}
-      </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                Vista previa HTML
+              </span>
+              <div
+                ref={previewRef}
+                onScroll={() => syncScroll(previewRef, editorRef)}
+                className="markdown-preview h-[28rem] overflow-y-auto rounded border border-zinc-300 bg-zinc-50 p-2 text-sm text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => onAction(draft, "edit", content)}
+              disabled={disabled}
+              className="rounded border border-fuchsia-300 px-3 py-1.5 text-sm text-fuchsia-700 hover:bg-fuchsia-50 disabled:opacity-50 dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950"
+            >
+              Guardar edición
+            </button>
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Al aceptar este borrador vas a habilitar la creación de un Pull Request en GitHub con este contenido. ¿Confirmás?"
+                  )
+                ) {
+                  onAction(draft, "accept", content);
+                }
+              }}
+              disabled={disabled}
+              className="rounded bg-fuchsia-600 px-3 py-1.5 text-sm text-white hover:bg-fuchsia-700 disabled:opacity-50"
+            >
+              Aceptar
+            </button>
+            <button
+              onClick={() => onAction(draft, "reject", content)}
+              disabled={disabled}
+              className="rounded bg-rose-900 px-3 py-1.5 text-sm text-white hover:bg-rose-950 disabled:opacity-50"
+            >
+              Rechazar
+            </button>
+            {draft.status === "accepted" && (
+              <button
+                onClick={() => onAction(draft, "write", content)}
+                disabled={busy}
+                className="rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800 disabled:opacity-50"
+              >
+                Crear PR en GitHub
+              </button>
+            )}
+            {draft.status === "written" && draft.prUrl && (
+              <a
+                href={draft.prUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800"
+              >
+                Ver PR #{draft.prNumber}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

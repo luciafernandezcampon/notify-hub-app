@@ -14,6 +14,16 @@ export function getOctokit(): Octokit {
   return octokit;
 }
 
+/**
+ * Octokit instance authenticated as an individual user (via their GitHub
+ * OAuth access token), for actions that should be attributed to them —
+ * e.g. commits/PRs created from the dashboard — instead of the shared
+ * service token.
+ */
+export function getOctokitForToken(accessToken: string): Octokit {
+  return new Octokit({ auth: accessToken });
+}
+
 export function getRepoConfig() {
   const owner = process.env.GITHUB_OWNER;
   const repo = process.env.GITHUB_REPO;

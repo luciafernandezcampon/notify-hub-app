@@ -2,6 +2,8 @@ import { getDraft, markDraftWritten } from "@/lib/db/drafts";
 import { updateRepositoryFile } from "@/lib/github/files";
 import { createBranch } from "@/lib/github/repository";
 import { createPullRequest } from "@/lib/github/pullRequests";
+import { getOctokitForToken } from "@/lib/github/client";
+import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,15 @@ export async function POST(
   ctx: RouteContext<"/api/drafts/[id]/write">
 ) {
   try {
+    const session = await auth();
+    if (!session?.githubAccessToken) {
+      return Response.json(
+        { ok: false, error: "Necesitás iniciar sesión con GitHub para crear un PR" },
+        { status: 401 }
+      );
+    }
+    const octokit = getOctokitForToken(session.githubAccessToken);
+
     const { id } = await ctx.params;
     const draft = await getDraft(id);
 
@@ -27,13 +38,14 @@ export async function POST(
     const content = draft.finalContent ?? draft.proposedContent;
     const branchName = `docs-ai/${draft.id}`;
 
-    await createBranch(branchName);
+    await createBranch(branchName, octokit);
 
     await updateRepositoryFile({
       path: draft.path,
       content,
       commitMessage: `docs: add/update ${draft.path} via docs-ai`,
       branch: branchName,
+      octokit,
     });
 
     const pr = await createPullRequest({
@@ -42,10 +54,11 @@ export async function POST(
       body: [
         draft.reason ? `**Motivo:** ${draft.reason}` : null,
         "",
-        "_Generado por docs-ai. Revisá el contenido antes de mergear._",
+        `_Generado por docs-ai, publicado por @${session.user?.name ?? "usuario"}. Revisá el contenido antes de mergear._`,
       ]
         .filter((line) => line !== null)
         .join("\n"),
+      octokit,
     });
 
     const updated = await markDraftWritten(id, pr.number, pr.html_url);

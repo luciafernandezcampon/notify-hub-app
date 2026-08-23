@@ -1,3 +1,4 @@
+import type { Octokit } from "octokit";
 import { getOctokit, getRepoConfig } from "./client";
 
 export interface UpdateRepositoryFileInput {
@@ -5,6 +6,7 @@ export interface UpdateRepositoryFileInput {
   content: string;
   commitMessage: string;
   branch?: string;
+  octokit?: Octokit;
 }
 
 function isNotFoundError(error: unknown): boolean {
@@ -21,8 +23,8 @@ export async function updateRepositoryFile({
   content,
   commitMessage,
   branch,
+  octokit = getOctokit(),
 }: UpdateRepositoryFileInput) {
-  const octokit = getOctokit();
   const { owner, repo } = getRepoConfig();
 
   let sha: string | undefined;

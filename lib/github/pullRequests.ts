@@ -1,3 +1,4 @@
+import type { Octokit } from "octokit";
 import { getOctokit, getRepoConfig } from "./client";
 import { getDefaultBranch } from "./repository";
 
@@ -33,6 +34,7 @@ export interface CreatePullRequestInput {
   head: string;
   body?: string;
   base?: string;
+  octokit?: Octokit;
 }
 
 export async function createPullRequest({
@@ -40,8 +42,8 @@ export async function createPullRequest({
   head,
   body,
   base,
+  octokit = getOctokit(),
 }: CreatePullRequestInput) {
-  const octokit = getOctokit();
   const { owner, repo } = getRepoConfig();
   const baseBranch = base ?? (await getDefaultBranch());
 

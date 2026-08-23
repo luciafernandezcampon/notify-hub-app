@@ -1,3 +1,4 @@
+import type { Octokit } from "octokit";
 import { getOctokit, getRepoConfig } from "./client";
 
 export interface RepoTreeEntry {
@@ -52,8 +53,10 @@ function isRefAlreadyExistsError(error: unknown): boolean {
  * Creates a branch from the tip of the default branch. If the branch already
  * exists (e.g. retrying a previous write), it's reused as-is.
  */
-export async function createBranch(branchName: string): Promise<void> {
-  const octokit = getOctokit();
+export async function createBranch(
+  branchName: string,
+  octokit: Octokit = getOctokit()
+): Promise<void> {
   const { owner, repo } = getRepoConfig();
   const defaultBranch = await getDefaultBranch();
 
