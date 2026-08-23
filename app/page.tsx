@@ -108,7 +108,9 @@ export default function Home() {
                 </h2>
                 <ul className="list-inside list-disc text-zinc-700 dark:text-zinc-300">
                   {response.result.affectedDocs.map((doc) => (
-                    <li key={doc}>{doc}</li>
+                    <li key={doc.path}>
+                      <span className="font-mono text-sm">{doc.path}</span> — {doc.reason}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -119,9 +121,19 @@ export default function Home() {
                 <h2 className="font-medium text-black dark:text-zinc-50">
                   Sugerencias
                 </h2>
-                <ul className="list-inside list-disc text-zinc-700 dark:text-zinc-300">
-                  {response.result.suggestions.map((suggestion, i) => (
-                    <li key={i}>{suggestion}</li>
+                <ul className="flex flex-col gap-2 text-zinc-700 dark:text-zinc-300">
+                  {response.result.suggestions.map((suggestion) => (
+                    <li key={suggestion.documentPath}>
+                      <p>
+                        <span className="font-mono text-sm">
+                          {suggestion.documentPath}
+                        </span>{" "}
+                        — {suggestion.explanation}
+                      </p>
+                      <pre className="mt-1 overflow-x-auto rounded bg-zinc-100 p-2 text-xs dark:bg-zinc-800">
+                        {suggestion.proposedContent}
+                      </pre>
+                    </li>
                   ))}
                 </ul>
               </div>

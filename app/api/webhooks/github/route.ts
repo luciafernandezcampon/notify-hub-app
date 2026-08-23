@@ -8,6 +8,7 @@ import { analyzeChange } from "@/lib/analysis/analyzeChange";
 import { generateManifest } from "@/lib/docs/generateManifest";
 import { saveAnalysisResult } from "@/lib/db/analyses";
 import { publishAnalysisComment } from "@/lib/github/comments";
+import { AIClientError } from "@/lib/ai/types";
 
 const PROCESSED_ACTIONS = new Set(["opened", "synchronize"]);
 
@@ -99,7 +100,17 @@ export async function POST(request: Request) {
 
     return Response.json({ ok: true, result });
   } catch (error) {
-    console.error("Webhook analysis failed for PR", prNumber, error);
+    if (error instanceof AIClientError) {
+      console.error(
+        "Webhook analysis failed for PR",
+        prNumber,
+        "(AI error):",
+        error.code,
+        error.cause ?? error
+      );
+    } else {
+      console.error("Webhook analysis failed for PR", prNumber, error);
+    }
     return Response.json({
       ok: false,
       error: "Analysis failed, acknowledged to avoid retries",

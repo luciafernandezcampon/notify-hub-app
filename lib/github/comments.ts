@@ -31,12 +31,13 @@ export function formatAnalysisComment(result: AnalysisResult): string {
 
   if (result.affectedDocs.length > 0) {
     lines.push("", "**Documentación afectada:**");
-    for (const doc of result.affectedDocs) lines.push(`- ${doc}`);
+    for (const doc of result.affectedDocs) lines.push(`- \`${doc.path}\` — ${doc.reason}`);
   }
 
   if (result.suggestions.length > 0) {
     lines.push("", "**Sugerencias:**");
-    for (const suggestion of result.suggestions) lines.push(`- ${suggestion}`);
+    for (const suggestion of result.suggestions)
+      lines.push(`- \`${suggestion.documentPath}\`: ${suggestion.explanation}`);
   }
 
   lines.push("", `<sub>Confianza: ${Math.round(result.confidence * 100)}%</sub>`);
