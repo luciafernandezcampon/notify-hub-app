@@ -87,7 +87,7 @@ export default function PullRequestsPanel() {
         <button
           onClick={load}
           disabled={loading}
-          className="rounded border border-zinc-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
+          className="rounded border border-fuchsia-300 px-3 py-1.5 text-sm text-fuchsia-700 hover:bg-fuchsia-50 disabled:opacity-50 dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950"
         >
           {loading ? "Actualizando..." : "Actualizar"}
         </button>
@@ -134,7 +134,7 @@ export default function PullRequestsPanel() {
                         href={draft.prUrl ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline dark:text-blue-400"
+                        className="text-violet-700 hover:underline dark:text-violet-400"
                       >
                         #{draft.prNumber}
                       </a>

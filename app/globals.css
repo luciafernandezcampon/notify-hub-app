@@ -25,6 +25,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+button:not(:disabled),
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 .markdown-preview h1,
 .markdown-preview h2,
 .markdown-preview h3,
@@ -84,6 +93,6 @@ body {
 }
 
 .markdown-preview a {
-  color: #2563eb;
+  color: #c026d3;
   text-decoration: underline;
 }

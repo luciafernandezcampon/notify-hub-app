@@ -35,6 +35,13 @@ const STATUS_LABELS: Record<DraftStatus, string> = {
   written: "PR abierto",
 };
 
+const STATUS_BADGE_STYLES: Record<DraftStatus, string> = {
+  proposed: "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
+  accepted: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300",
+  rejected: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
+  written: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300",
+};
+
 export default function DocsDrafts() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -132,7 +139,7 @@ export default function DocsDrafts() {
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded bg-fuchsia-600 px-4 py-2 text-sm font-medium text-white hover:bg-fuchsia-700 disabled:opacity-50"
         >
           {generating ? "Generando..." : "Generar documentación inicial"}
         </button>
@@ -223,7 +230,9 @@ function DraftCard({
           </p>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">{draft.path}</p>
         </div>
-        <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[draft.status]}`}
+        >
           {STATUS_LABELS[draft.status]}
         </span>
       </div>
@@ -264,21 +273,29 @@ function DraftCard({
         <button
           onClick={() => onAction(draft, "edit", content)}
           disabled={disabled}
-          className="rounded border border-zinc-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
+          className="rounded border border-fuchsia-300 px-3 py-1.5 text-sm text-fuchsia-700 hover:bg-fuchsia-50 disabled:opacity-50 dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950"
         >
           Guardar edición
         </button>
         <button
-          onClick={() => onAction(draft, "accept", content)}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Al aceptar este borrador vas a habilitar la creación de un Pull Request en GitHub con este contenido. ¿Confirmás?"
+              )
+            ) {
+              onAction(draft, "accept", content);
+            }
+          }}
           disabled={disabled}
-          className="rounded bg-green-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+          className="rounded bg-fuchsia-600 px-3 py-1.5 text-sm text-white hover:bg-fuchsia-700 disabled:opacity-50"
         >
           Aceptar
         </button>
         <button
           onClick={() => onAction(draft, "reject", content)}
           disabled={disabled}
-          className="rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+          className="rounded bg-rose-900 px-3 py-1.5 text-sm text-white hover:bg-rose-950 disabled:opacity-50"
         >
           Rechazar
         </button>
@@ -286,7 +303,7 @@ function DraftCard({
           <button
             onClick={() => onAction(draft, "write", content)}
             disabled={busy}
-            className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            className="rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800 disabled:opacity-50"
           >
             Crear PR en GitHub
           </button>
@@ -296,7 +313,7 @@ function DraftCard({
             href={draft.prUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center rounded bg-blue-600 px-3 py-1.5 text-sm text-white"
+            className="flex items-center rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800"
           >
             Ver PR #{draft.prNumber}
           </a>

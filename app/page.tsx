@@ -65,8 +65,8 @@ export default function Home() {
               onClick={() => setTab(t.id)}
               className={`px-3 py-2 text-sm font-medium ${
                 tab === t.id
-                  ? "border-b-2 border-black text-black dark:border-white dark:text-white"
-                  : "text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+                  ? "border-b-2 border-fuchsia-600 text-fuchsia-700 dark:border-fuchsia-400 dark:text-fuchsia-300"
+                  : "text-zinc-500 hover:text-fuchsia-700 dark:text-zinc-400 dark:hover:text-fuchsia-300"
               }`}
             >
               {t.label}
@@ -88,7 +88,7 @@ export default function Home() {
               <button
                 onClick={handleAnalyze}
                 disabled={loading}
-                className="rounded bg-black px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                className="rounded bg-fuchsia-600 px-4 py-2 font-medium text-white hover:bg-fuchsia-700 disabled:opacity-50"
               >
                 {loading ? "Analizando..." : "Analizar ahora"}
               </button>
