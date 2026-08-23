@@ -1,4 +1,4 @@
-import { prisma } from "./client";
+import { getPrisma } from "./client";
 import type { Prisma } from "@prisma/client";
 import type { AnalysisResult } from "@/lib/analysis/analyzeChange";
 
@@ -10,7 +10,7 @@ export interface SaveAnalysisResultInput {
 }
 
 export async function saveAnalysisResult(input: SaveAnalysisResultInput) {
-  return prisma.analysis.create({
+  return getPrisma().analysis.create({
     data: {
       repo: input.repo,
       prNumber: input.prNumber,
@@ -30,7 +30,7 @@ export interface ListAnalysesOptions {
 }
 
 export function listAnalyses({ repo, source, limit = 10 }: ListAnalysesOptions) {
-  return prisma.analysis.findMany({
+  return getPrisma().analysis.findMany({
     where: { repo, ...(source ? { source } : {}) },
     orderBy: { createdAt: "desc" },
     take: limit,
