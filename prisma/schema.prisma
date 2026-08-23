@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnalysisSource {
+  manual
+  webhook
+}
+
+enum AnalysisStatus {
+  analyzed
+  accepted
+  rejected
+  error
+}
+
+model Analysis {
+  id         String         @id @default(cuid())
+  repo       String
+  prNumber   Int
+  source     AnalysisSource
+  status     AnalysisStatus @default(analyzed)
+  impact     String?
+  summary    String?
+  resultJson Json
+  feedback   String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  changelogSyncs ChangelogSync[]
+
+  @@index([repo, prNumber])
+}
+
+model DocumentationManifest {
+  id           String   @id @default(cuid())
+  repo         String   @unique
+  manifestJson Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ChangelogSync {
+  id              String   @id @default(cuid())
+  analysisId      String
+  analysis        Analysis @relation(fields: [analysisId], references: [id])
+  action          String
+  originalContent String?
+  finalContent    String?
+  createdAt       DateTime @default(now())
+
+  @@index([analysisId])
+}
