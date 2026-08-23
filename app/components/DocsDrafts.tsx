@@ -47,6 +47,7 @@ export default function DocsDrafts() {
   const [generating, setGenerating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   async function loadDrafts() {
     const res = await fetch("/api/drafts");
@@ -70,6 +71,9 @@ export default function DocsDrafts() {
         } else {
           setError(data.error);
         }
+      })
+      .finally(() => {
+        if (!cancelled) setInitialLoading(false);
       });
 
     return () => {
@@ -159,7 +163,14 @@ export default function DocsDrafts() {
         </div>
       )}
 
-      {drafts.length === 0 && (
+      {initialLoading && (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-zinc-500 dark:text-zinc-400">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-600 border-t-transparent" />
+          Cargando...
+        </div>
+      )}
+
+      {!initialLoading && drafts.length === 0 && (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           No hay borradores todavía.
         </p>

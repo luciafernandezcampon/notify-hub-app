@@ -27,9 +27,19 @@ export async function GET(request: Request) {
             : pr.state === "closed"
               ? "closed"
               : "open";
-          return { prNumber, state };
+          return {
+            prNumber,
+            state,
+            author: pr.user?.login ?? null,
+            authorAvatarUrl: pr.user?.avatar_url ?? null,
+          };
         } catch {
-          return { prNumber, state: "unknown" as PullRequestState };
+          return {
+            prNumber,
+            state: "unknown" as PullRequestState,
+            author: null,
+            authorAvatarUrl: null,
+          };
         }
       })
     );

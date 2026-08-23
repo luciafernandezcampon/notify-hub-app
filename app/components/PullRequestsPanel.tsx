@@ -67,9 +67,16 @@ const STATUS_BADGE_STYLES: Record<PullRequestState, string> = {
   unknown: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
 };
 
+interface PrStatusEntry {
+  prNumber: number;
+  state: PullRequestState;
+  author: string | null;
+  authorAvatarUrl: string | null;
+}
+
 interface PrStatusResponse {
   ok: boolean;
-  statuses?: { prNumber: number; state: PullRequestState }[];
+  statuses?: PrStatusEntry[];
   error?: string;
 }
 
@@ -140,9 +147,10 @@ function mergeRows(analyses: AnalysisItem[], drafts: Draft[]): MergedRow[] {
 
 export default function PullRequestsPanel() {
   const [rows, setRows] = useState<MergedRow[]>([]);
-  const [statuses, setStatuses] = useState<Record<number, PullRequestState>>({});
+  const [statuses, setStatuses] = useState<Record<number, PrStatusEntry>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
 
   async function fetchRows(): Promise<MergedRow[] | { error: string }> {
@@ -168,7 +176,7 @@ export default function PullRequestsPanel() {
       if (data.ok && data.statuses) {
         setStatuses((prev) => {
           const next = { ...prev };
-          for (const s of data.statuses!) next[s.prNumber] = s.state;
+          for (const s of data.statuses!) next[s.prNumber] = s;
           return next;
         });
       }
@@ -196,15 +204,19 @@ export default function PullRequestsPanel() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchRows().then((result) => {
-      if (cancelled) return;
-      if ("error" in result) {
-        setError(result.error);
-      } else {
-        setRows(result);
-        fetchStatuses(result.map((r) => r.prNumber));
-      }
-    });
+    fetchRows()
+      .then((result) => {
+        if (cancelled) return;
+        if ("error" in result) {
+          setError(result.error);
+        } else {
+          setRows(result);
+          fetchStatuses(result.map((r) => r.prNumber));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setInitialLoading(false);
+      });
 
     return () => {
       cancelled = true;
@@ -238,19 +250,27 @@ export default function PullRequestsPanel() {
         </div>
       )}
 
-      {rows.length === 0 && !error && (
+      {initialLoading && (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-zinc-500 dark:text-zinc-400">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-600 border-t-transparent" />
+          Cargando...
+        </div>
+      )}
+
+      {!initialLoading && rows.length === 0 && !error && (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Todavía no hay ningún PR analizado ni creado por el sistema.
         </p>
       )}
 
-      {rows.length > 0 && (
+      {!initialLoading && rows.length > 0 && (
         <div className="overflow-x-auto rounded border border-zinc-300 dark:border-zinc-700">
           <table className="w-full text-left text-sm">
             <thead className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
               <tr>
                 <th className="px-3 py-2 font-medium">PR</th>
                 <th className="px-3 py-2 font-medium">Estado</th>
+                <th className="px-3 py-2 font-medium">Autor</th>
                 <th className="px-3 py-2 font-medium">Origen</th>
                 <th className="px-3 py-2 font-medium">Título / Resumen</th>
                 <th className="px-3 py-2 font-medium">Archivo</th>
@@ -278,10 +298,34 @@ export default function PullRequestsPanel() {
                   <td className="px-3 py-2">
                     {statuses[row.prNumber] ? (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_STYLES[statuses[row.prNumber]]}`}
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_STYLES[statuses[row.prNumber].state]}`}
                       >
-                        {STATUS_LABELS[statuses[row.prNumber]]}
+                        {STATUS_LABELS[statuses[row.prNumber].state]}
                       </span>
+                    ) : (
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                        {statusLoading ? "…" : "?"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {statuses[row.prNumber]?.author ? (
+                      <a
+                        href={`https://github.com/${statuses[row.prNumber].author}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-zinc-700 hover:underline dark:text-zinc-300"
+                      >
+                        {statuses[row.prNumber].authorAvatarUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={statuses[row.prNumber].authorAvatarUrl!}
+                            alt=""
+                            className="h-5 w-5 rounded-full"
+                          />
+                        )}
+                        {statuses[row.prNumber].author}
+                      </a>
                     ) : (
                       <span className="text-xs text-zinc-400 dark:text-zinc-500">
                         {statusLoading ? "…" : "?"}
