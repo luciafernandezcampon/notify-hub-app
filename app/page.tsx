@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AnalysisResult } from "@/lib/analysis/analyzeChange";
+import DocsDrafts from "@/app/components/DocsDrafts";
 
 type ApiResponse =
   | { ok: true; result: AnalysisResult }
@@ -127,6 +128,10 @@ export default function Home() {
             )}
           </div>
         )}
+
+        <hr className="my-4 border-zinc-200 dark:border-zinc-800" />
+
+        <DocsDrafts />
       </main>
     </div>
   );

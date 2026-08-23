@@ -7,6 +7,7 @@ import { getRepoConfig } from "@/lib/github/client";
 import { analyzeChange } from "@/lib/analysis/analyzeChange";
 import { generateManifest } from "@/lib/docs/generateManifest";
 import { saveAnalysisResult } from "@/lib/db/analyses";
+import { publishAnalysisComment } from "@/lib/github/comments";
 
 const PROCESSED_ACTIONS = new Set(["opened", "synchronize"]);
 
@@ -93,6 +94,8 @@ export async function POST(request: Request) {
       source: "webhook",
       result,
     });
+
+    await publishAnalysisComment(prNumber, result);
 
     return Response.json({ ok: true, result });
   } catch (error) {

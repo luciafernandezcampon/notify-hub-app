@@ -56,3 +56,26 @@ model ChangelogSync {
 
   @@index([analysisId])
 }
+
+enum DraftStatus {
+  proposed
+  accepted
+  rejected
+  written
+}
+
+model DocumentationDraft {
+  id              String      @id @default(cuid())
+  repo            String
+  path            String
+  title           String?
+  reason          String?
+  originalContent String?
+  proposedContent String
+  finalContent    String?
+  status          DraftStatus @default(proposed)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([repo])
+}
