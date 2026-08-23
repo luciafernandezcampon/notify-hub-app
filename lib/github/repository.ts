@@ -39,6 +39,42 @@ export async function getRepoTree(): Promise<RepoTreeEntry[]> {
     }));
 }
 
+function isRefAlreadyExistsError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    (error as { status: unknown }).status === 422
+  );
+}
+
+/**
+ * Creates a branch from the tip of the default branch. If the branch already
+ * exists (e.g. retrying a previous write), it's reused as-is.
+ */
+export async function createBranch(branchName: string): Promise<void> {
+  const octokit = getOctokit();
+  const { owner, repo } = getRepoConfig();
+  const defaultBranch = await getDefaultBranch();
+
+  const { data: ref } = await octokit.rest.git.getRef({
+    owner,
+    repo,
+    ref: `heads/${defaultBranch}`,
+  });
+
+  try {
+    await octokit.rest.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${branchName}`,
+      sha: ref.object.sha,
+    });
+  } catch (error) {
+    if (!isRefAlreadyExistsError(error)) throw error;
+  }
+}
+
 export async function getFileContent(path: string): Promise<string> {
   const octokit = getOctokit();
   const { owner, repo } = getRepoConfig();

@@ -7,6 +7,7 @@ import { getRepoConfig } from "@/lib/github/client";
 import { analyzeChange } from "@/lib/analysis/analyzeChange";
 import { generateManifest } from "@/lib/docs/generateManifest";
 import { saveAnalysisResult } from "@/lib/db/analyses";
+import { AIClientError, publicAIErrorMessage, aiErrorHttpStatus } from "@/lib/ai/types";
 
 const RequestSchema = z.object({
   prNumber: z.number().int().positive(),
@@ -47,6 +48,14 @@ export async function POST(request: Request) {
       return Response.json(
         { ok: false, error: "Invalid request body", issues: error.issues },
         { status: 400 }
+      );
+    }
+
+    if (error instanceof AIClientError) {
+      console.error("analyze failed (AI error):", error.code, error.cause ?? error);
+      return Response.json(
+        { ok: false, error: publicAIErrorMessage(error) },
+        { status: aiErrorHttpStatus(error) }
       );
     }
 

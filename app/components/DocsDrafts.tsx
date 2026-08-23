@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { renderMarkdownToHtml } from "@/lib/markdown/renderMarkdown";
+
+const MAX_MODULES = 5;
+const MAX_FILES_PER_MODULE = 5;
+const MAX_CHARS_PER_FILE = 3000;
 
 type DraftStatus = "proposed" | "accepted" | "rejected" | "written";
 
@@ -14,6 +19,8 @@ interface Draft {
   proposedContent: string;
   finalContent: string | null;
   status: DraftStatus;
+  prNumber: number | null;
+  prUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,12 +32,18 @@ const STATUS_LABELS: Record<DraftStatus, string> = {
   proposed: "Propuesto",
   accepted: "Aceptado",
   rejected: "Rechazado",
-  written: "Escrito en GitHub",
+  written: "PR abierto",
+};
+
+const STATUS_BADGE_STYLES: Record<DraftStatus, string> = {
+  proposed: "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
+  accepted: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300",
+  rejected: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
+  written: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300",
 };
 
 export default function DocsDrafts() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [generating, setGenerating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,13 +94,10 @@ export default function DocsDrafts() {
     }
   }
 
-  function contentFor(draft: Draft): string {
-    return editedContent[draft.id] ?? draft.finalContent ?? draft.proposedContent;
-  }
-
   async function handleAction(
     draft: Draft,
-    action: "edit" | "accept" | "reject" | "write"
+    action: "edit" | "accept" | "reject" | "write",
+    content: string
   ) {
     setBusyId(draft.id);
     setError(null);
@@ -101,9 +111,7 @@ export default function DocsDrafts() {
         }
       } else {
         const body =
-          action === "reject"
-            ? { action: "reject" as const }
-            : { action, content: contentFor(draft) };
+          action === "reject" ? { action: "reject" as const } : { action, content };
 
         const res = await fetch(`/api/drafts/${draft.id}`, {
           method: "PATCH",
@@ -131,11 +139,19 @@ export default function DocsDrafts() {
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded bg-fuchsia-600 px-4 py-2 text-sm font-medium text-white hover:bg-fuchsia-700 disabled:opacity-50"
         >
           {generating ? "Generando..." : "Generar documentación inicial"}
         </button>
       </div>
+
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        Cada corrida analiza como máximo {MAX_MODULES} módulos sin documentar, hasta{" "}
+        {MAX_FILES_PER_MODULE} archivos por módulo, y {MAX_CHARS_PER_FILE.toLocaleString("es-AR")}{" "}
+        caracteres por archivo (nunca el repositorio completo). Los módulos que queden afuera de
+        ese límite, o el contenido truncado de un archivo largo, no llegan a evaluarse — el
+        borrador puede estar incompleto.
+      </p>
 
       {error && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
@@ -151,70 +167,157 @@ export default function DocsDrafts() {
 
       <div className="flex flex-col gap-4">
         {drafts.map((draft) => (
-          <div
+          <DraftCard
             key={draft.id}
-            className="flex flex-col gap-3 rounded border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-medium text-black dark:text-zinc-50">
-                  {draft.title ?? draft.path}
-                </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">{draft.path}</p>
-              </div>
-              <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-                {STATUS_LABELS[draft.status]}
-              </span>
-            </div>
-
-            {draft.reason && (
-              <p className="text-sm text-zinc-700 dark:text-zinc-300">{draft.reason}</p>
-            )}
-
-            <textarea
-              value={contentFor(draft)}
-              onChange={(e) =>
-                setEditedContent((prev) => ({ ...prev, [draft.id]: e.target.value }))
-              }
-              rows={10}
-              className="w-full rounded border border-zinc-300 bg-zinc-50 p-2 font-mono text-xs text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
-              disabled={draft.status === "written"}
-            />
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleAction(draft, "edit")}
-                disabled={busyId === draft.id || draft.status === "written"}
-                className="rounded border border-zinc-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
-              >
-                Guardar edición
-              </button>
-              <button
-                onClick={() => handleAction(draft, "accept")}
-                disabled={busyId === draft.id || draft.status === "written"}
-                className="rounded bg-green-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-              >
-                Aceptar
-              </button>
-              <button
-                onClick={() => handleAction(draft, "reject")}
-                disabled={busyId === draft.id || draft.status === "written"}
-                className="rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-              >
-                Rechazar
-              </button>
-              {draft.status === "accepted" && (
-                <button
-                  onClick={() => handleAction(draft, "write")}
-                  disabled={busyId === draft.id}
-                  className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                >
-                  Escribir en GitHub
-                </button>
-              )}
-            </div>
-          </div>
+            draft={draft}
+            busy={busyId === draft.id}
+            onAction={handleAction}
+          />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function DraftCard({
+  draft,
+  busy,
+  onAction,
+}: {
+  draft: Draft;
+  busy: boolean;
+  onAction: (
+    draft: Draft,
+    action: "edit" | "accept" | "reject" | "write",
+    content: string
+  ) => void;
+}) {
+  const initialContent = draft.finalContent ?? draft.proposedContent;
+  const [content, setContent] = useState(initialContent);
+  const previewHtml = useMemo(() => renderMarkdownToHtml(content), [content]);
+  const disabled = busy || draft.status === "written";
+
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const syncingRef = useRef(false);
+
+  function syncScroll(
+    source: React.RefObject<HTMLElement | null>,
+    target: React.RefObject<HTMLElement | null>
+  ) {
+    if (syncingRef.current) {
+      syncingRef.current = false;
+      return;
+    }
+    const from = source.current;
+    const to = target.current;
+    if (!from || !to) return;
+
+    const scrollableFrom = from.scrollHeight - from.clientHeight;
+    const scrollableTo = to.scrollHeight - to.clientHeight;
+    const ratio = scrollableFrom > 0 ? from.scrollTop / scrollableFrom : 0;
+
+    syncingRef.current = true;
+    to.scrollTop = ratio * scrollableTo;
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-medium text-black dark:text-zinc-50">
+            {draft.title ?? draft.path}
+          </p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">{draft.path}</p>
+        </div>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[draft.status]}`}
+        >
+          {STATUS_LABELS[draft.status]}
+        </span>
+      </div>
+
+      {draft.reason && (
+        <p className="text-sm text-zinc-700 dark:text-zinc-300">{draft.reason}</p>
+      )}
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Markdown (editable)
+          </span>
+          <textarea
+            ref={editorRef}
+            onScroll={() => syncScroll(editorRef, previewRef)}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="h-[28rem] w-full resize-y rounded border border-zinc-300 bg-zinc-50 p-2 font-mono text-xs text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
+            disabled={draft.status === "written"}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Vista previa HTML
+          </span>
+          <div
+            ref={previewRef}
+            onScroll={() => syncScroll(previewRef, editorRef)}
+            className="markdown-preview h-[28rem] overflow-y-auto rounded border border-zinc-300 bg-zinc-50 p-2 text-sm text-black dark:border-zinc-700 dark:bg-black dark:text-zinc-100"
+            dangerouslySetInnerHTML={{ __html: previewHtml }}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => onAction(draft, "edit", content)}
+          disabled={disabled}
+          className="rounded border border-fuchsia-300 px-3 py-1.5 text-sm text-fuchsia-700 hover:bg-fuchsia-50 disabled:opacity-50 dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950"
+        >
+          Guardar edición
+        </button>
+        <button
+          onClick={() => {
+            if (
+              window.confirm(
+                "Al aceptar este borrador vas a habilitar la creación de un Pull Request en GitHub con este contenido. ¿Confirmás?"
+              )
+            ) {
+              onAction(draft, "accept", content);
+            }
+          }}
+          disabled={disabled}
+          className="rounded bg-fuchsia-600 px-3 py-1.5 text-sm text-white hover:bg-fuchsia-700 disabled:opacity-50"
+        >
+          Aceptar
+        </button>
+        <button
+          onClick={() => onAction(draft, "reject", content)}
+          disabled={disabled}
+          className="rounded bg-rose-900 px-3 py-1.5 text-sm text-white hover:bg-rose-950 disabled:opacity-50"
+        >
+          Rechazar
+        </button>
+        {draft.status === "accepted" && (
+          <button
+            onClick={() => onAction(draft, "write", content)}
+            disabled={busy}
+            className="rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800 disabled:opacity-50"
+          >
+            Crear PR en GitHub
+          </button>
+        )}
+        {draft.status === "written" && draft.prUrl && (
+          <a
+            href={draft.prUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center rounded bg-violet-700 px-3 py-1.5 text-sm text-white hover:bg-violet-800"
+          >
+            Ver PR #{draft.prNumber}
+          </a>
+        )}
       </div>
     </div>
   );

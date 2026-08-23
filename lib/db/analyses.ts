@@ -22,3 +22,26 @@ export async function saveAnalysisResult(input: SaveAnalysisResultInput) {
     },
   });
 }
+
+export interface ListAnalysesOptions {
+  repo: string;
+  source?: "manual" | "webhook";
+  limit?: number;
+}
+
+export function listAnalyses({ repo, source, limit = 10 }: ListAnalysesOptions) {
+  return prisma.analysis.findMany({
+    where: { repo, ...(source ? { source } : {}) },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      prNumber: true,
+      source: true,
+      status: true,
+      impact: true,
+      summary: true,
+      createdAt: true,
+    },
+  });
+}
