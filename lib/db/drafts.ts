@@ -48,9 +48,9 @@ export function rejectDraft(id: string) {
   });
 }
 
-export function markDraftWritten(id: string) {
+export function markDraftWritten(id: string, prNumber: number, prUrl: string) {
   return prisma.documentationDraft.update({
     where: { id },
-    data: { status: "written" },
+    data: { status: "written", prNumber, prUrl },
   });
 }

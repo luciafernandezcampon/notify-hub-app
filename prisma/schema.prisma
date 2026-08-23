@@ -74,6 +74,8 @@ model DocumentationDraft {
   proposedContent String
   finalContent    String?
   status          DraftStatus @default(proposed)
+  prNumber        Int?
+  prUrl           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

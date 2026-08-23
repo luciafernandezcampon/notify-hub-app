@@ -1,5 +1,7 @@
 import { getDraft, markDraftWritten } from "@/lib/db/drafts";
 import { updateRepositoryFile } from "@/lib/github/files";
+import { createBranch } from "@/lib/github/repository";
+import { createPullRequest } from "@/lib/github/pullRequests";
 
 export async function POST(
   _request: Request,
@@ -21,14 +23,30 @@ export async function POST(
     }
 
     const content = draft.finalContent ?? draft.proposedContent;
+    const branchName = `docs-ai/${draft.id}`;
+
+    await createBranch(branchName);
 
     await updateRepositoryFile({
       path: draft.path,
       content,
       commitMessage: `docs: add/update ${draft.path} via docs-ai`,
+      branch: branchName,
     });
 
-    const updated = await markDraftWritten(id);
+    const pr = await createPullRequest({
+      title: `docs: ${draft.title ?? draft.path}`,
+      head: branchName,
+      body: [
+        draft.reason ? `**Motivo:** ${draft.reason}` : null,
+        "",
+        "_Generado por docs-ai. Revisá el contenido antes de mergear._",
+      ]
+        .filter((line) => line !== null)
+        .join("\n"),
+    });
+
+    const updated = await markDraftWritten(id, pr.number, pr.html_url);
     return Response.json({ ok: true, draft: updated });
   } catch (error) {
     return Response.json(
