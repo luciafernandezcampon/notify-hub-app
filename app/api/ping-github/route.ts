@@ -1,5 +1,7 @@
 import { getOctokit, getRepoConfig } from "@/lib/github/client";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const octokit = getOctokit();

@@ -4,7 +4,7 @@ import type { AnalysisResult } from "@/lib/analysis/analyzeChange";
 const MARKER = "<!-- docs-ai-analysis -->";
 
 const IMPACT_LABELS: Record<AnalysisResult["impact"], string> = {
-  low: "Bajo",
+  low: "Bajito v2",
   medium: "Medio",
   high: "Alto",
 };

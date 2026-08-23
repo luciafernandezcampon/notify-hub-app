@@ -1,4 +1,5 @@
 import { getOctokit, getRepoConfig } from "./client";
+import { getDefaultBranch } from "./repository";
 
 export async function getPullRequest(prNumber: number) {
   const octokit = getOctokit();
@@ -25,6 +26,35 @@ export async function getPullRequestFiles(prNumber: number) {
   });
 
   return files;
+}
+
+export interface CreatePullRequestInput {
+  title: string;
+  head: string;
+  body?: string;
+  base?: string;
+}
+
+export async function createPullRequest({
+  title,
+  head,
+  body,
+  base,
+}: CreatePullRequestInput) {
+  const octokit = getOctokit();
+  const { owner, repo } = getRepoConfig();
+  const baseBranch = base ?? (await getDefaultBranch());
+
+  const { data } = await octokit.rest.pulls.create({
+    owner,
+    repo,
+    title,
+    head,
+    base: baseBranch,
+    body,
+  });
+
+  return data;
 }
 
 export async function getPullRequestDiff(prNumber: number): Promise<string> {

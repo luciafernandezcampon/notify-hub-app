@@ -10,7 +10,7 @@ import { saveAnalysisResult } from "@/lib/db/analyses";
 import { publishAnalysisComment } from "@/lib/github/comments";
 import { AIClientError } from "@/lib/ai/types";
 
-const PROCESSED_ACTIONS = new Set(["opened", "synchronize"]);
+const PROCESSED_ACTIONS = new Set(["opened", "synchronize", "closed"]);
 
 function isValidSignature(
   payload: string,
@@ -29,6 +29,8 @@ function isValidSignature(
 
   return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
 }
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const secret = process.env.GITHUB_WEBHOOK_SECRET;
@@ -68,6 +70,14 @@ export async function POST(request: Request) {
       ok: true,
       skipped: true,
       reason: "Missing pull_request.number",
+    });
+  }
+
+  if (action === "closed" && payload.pull_request?.merged !== true) {
+    return Response.json({
+      ok: true,
+      skipped: true,
+      reason: "PR closed without merging",
     });
   }
 

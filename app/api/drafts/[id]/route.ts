@@ -12,6 +12,8 @@ const PatchSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reject") }),
 ]);
 
+export const dynamic = "force-dynamic";
+
 export async function PATCH(
   request: Request,
   ctx: RouteContext<"/api/drafts/[id]">

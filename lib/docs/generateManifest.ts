@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/client";
+import { getPrisma } from "@/lib/db/client";
 import type { DocumentationManifestEntry } from "@/lib/analysis/analyzeChange";
 
 interface ManifestJson {
@@ -8,7 +8,7 @@ interface ManifestJson {
 export async function generateManifest(
   repo: string
 ): Promise<DocumentationManifestEntry[]> {
-  const record = await prisma.documentationManifest.findUnique({
+  const record = await getPrisma().documentationManifest.findUnique({
     where: { repo },
   });
 
