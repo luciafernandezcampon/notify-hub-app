@@ -1,6 +1,8 @@
 import { getRepoConfig } from "@/lib/github/client";
 import { listAnalyses } from "@/lib/db/analyses";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const { owner, repo } = getRepoConfig();

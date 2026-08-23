@@ -1,6 +1,8 @@
 import { getAIClient } from "@/lib/ai/client";
 import { AIClientError, publicAIErrorMessage, aiErrorHttpStatus } from "@/lib/ai/types";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const { model } = await getAIClient().ping();

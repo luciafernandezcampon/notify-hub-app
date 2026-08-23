@@ -3,6 +3,8 @@ import { updateRepositoryFile } from "@/lib/github/files";
 import { createBranch } from "@/lib/github/repository";
 import { createPullRequest } from "@/lib/github/pullRequests";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   _request: Request,
   ctx: RouteContext<"/api/drafts/[id]/write">

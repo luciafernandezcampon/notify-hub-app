@@ -1,6 +1,8 @@
 import { generateDocs } from "@/lib/docs/generateDocs";
 import { AIClientError, publicAIErrorMessage, aiErrorHttpStatus } from "@/lib/ai/types";
 
+export const dynamic = "force-dynamic";
+
 export async function POST() {
   try {
     const drafts = await generateDocs();
