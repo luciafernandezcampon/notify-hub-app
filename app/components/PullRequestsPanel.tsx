@@ -72,6 +72,7 @@ interface PrStatusEntry {
   state: PullRequestState;
   author: string | null;
   authorAvatarUrl: string | null;
+  headBranch: string | null;
 }
 
 interface PrStatusResponse {
@@ -351,7 +352,7 @@ export default function PullRequestsPanel() {
                     {row.path ?? "—"}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs text-zinc-600 dark:text-zinc-400">
-                    {row.branch ?? "—"}
+                    {row.branch ?? statuses[row.prNumber]?.headBranch ?? "—"}
                   </td>
                   <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400">
                     {new Date(row.firstSeenAt).toLocaleString("es-AR")}

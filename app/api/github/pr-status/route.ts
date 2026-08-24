@@ -32,6 +32,7 @@ export async function GET(request: Request) {
             state,
             author: pr.user?.login ?? null,
             authorAvatarUrl: pr.user?.avatar_url ?? null,
+            headBranch: pr.head?.ref ?? null,
           };
         } catch {
           return {
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
             state: "unknown" as PullRequestState,
             author: null,
             authorAvatarUrl: null,
+            headBranch: null,
           };
         }
       })
