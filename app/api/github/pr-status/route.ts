@@ -1,4 +1,4 @@
-import { getPullRequest } from "@/lib/github/pullRequests";
+import { getPullRequest, getPullRequestFiles } from "@/lib/github/pullRequests";
 
 export type PullRequestState = "open" | "merged" | "closed" | "unknown";
 
@@ -21,7 +21,10 @@ export async function GET(request: Request) {
     const statuses = await Promise.all(
       prNumbers.map(async (prNumber) => {
         try {
-          const pr = await getPullRequest(prNumber);
+          const [pr, files] = await Promise.all([
+            getPullRequest(prNumber),
+            getPullRequestFiles(prNumber),
+          ]);
           const state: PullRequestState = pr.merged
             ? "merged"
             : pr.state === "closed"
@@ -33,6 +36,7 @@ export async function GET(request: Request) {
             author: pr.user?.login ?? null,
             authorAvatarUrl: pr.user?.avatar_url ?? null,
             headBranch: pr.head?.ref ?? null,
+            files: files.map((f) => f.filename),
           };
         } catch {
           return {
@@ -41,6 +45,7 @@ export async function GET(request: Request) {
             author: null,
             authorAvatarUrl: null,
             headBranch: null,
+            files: [] as string[],
           };
         }
       })

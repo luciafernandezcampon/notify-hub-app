@@ -73,6 +73,13 @@ interface PrStatusEntry {
   author: string | null;
   authorAvatarUrl: string | null;
   headBranch: string | null;
+  files: string[];
+}
+
+function formatFiles(files: string[] | undefined): string {
+  if (!files || files.length === 0) return "—";
+  if (files.length <= 2) return files.join(", ");
+  return `${files.slice(0, 2).join(", ")} +${files.length - 2} más`;
 }
 
 interface PrStatusResponse {
@@ -348,8 +355,11 @@ export default function PullRequestsPanel() {
                   <td className="max-w-xs truncate px-3 py-2 text-black dark:text-zinc-100">
                     {row.title}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-zinc-600 dark:text-zinc-400">
-                    {row.path ?? "—"}
+                  <td
+                    className="max-w-xs truncate px-3 py-2 font-mono text-xs text-zinc-600 dark:text-zinc-400"
+                    title={statuses[row.prNumber]?.files.join(", ")}
+                  >
+                    {row.path ?? formatFiles(statuses[row.prNumber]?.files)}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs text-zinc-600 dark:text-zinc-400">
                     {row.branch ?? statuses[row.prNumber]?.headBranch ?? "—"}
