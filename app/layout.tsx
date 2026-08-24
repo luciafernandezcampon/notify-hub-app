@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import AuthStatus from "@/app/components/AuthStatus";
 import RequestCollaboratorButton from "@/app/components/RequestCollaboratorButton";
 import { auth } from "@/lib/auth";
+import { isCollaborator } from "@/lib/github/collaborators";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,6 +24,15 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
 
+  let showRequestButton = Boolean(session?.githubUsername);
+  if (session?.githubUsername) {
+    try {
+      showRequestButton = !(await isCollaborator(session.githubUsername));
+    } catch (error) {
+      console.error("Failed to check collaborator status", error);
+    }
+  }
+
   return (
     <html
       lang="en"
@@ -30,7 +40,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-6 py-2 dark:border-zinc-800 dark:bg-black">
-          <RequestCollaboratorButton username={session?.githubUsername ?? null} />
+          <RequestCollaboratorButton
+            username={showRequestButton ? (session?.githubUsername ?? null) : null}
+          />
           <AuthStatus />
         </div>
         {children}
