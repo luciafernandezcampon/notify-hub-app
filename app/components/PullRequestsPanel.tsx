@@ -352,11 +352,11 @@ export default function PullRequestsPanel() {
                       ))}
                     </div>
                   </td>
-                  <td className="max-w-xs truncate px-3 py-2 text-black dark:text-zinc-100">
+                  <td className="max-w-sm px-3 py-2 text-black dark:text-zinc-100">
                     {row.title}
                   </td>
                   <td
-                    className="max-w-xs truncate px-3 py-2 font-mono text-xs text-zinc-600 dark:text-zinc-400"
+                    className="max-w-xs px-3 py-2 font-mono text-xs break-words text-zinc-600 dark:text-zinc-400"
                     title={statuses[row.prNumber]?.files.join(", ")}
                   >
                     {row.path ?? formatFiles(statuses[row.prNumber]?.files)}
