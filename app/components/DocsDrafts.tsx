@@ -138,7 +138,7 @@ export default function DocsDrafts() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-          Documentación inicial
+          Documentación inicial v2
         </h2>
         <button
           onClick={handleGenerate}
