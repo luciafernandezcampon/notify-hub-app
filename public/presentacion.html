@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notify</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0713;
+    --bg-raised: #130d20;
+    --bg-raised-2: #1a1329;
+    --ink: #f2edf8;
+    --muted: #9a8dab;
+    --muted-2: #6f6480;
+    --line: #2a1f3b;
+    --line-soft: #1e1630;
+    --accent: #e879f9;
+    --accent-dim: #a855c9;
+    --accent-2: #a78bfa;
+    --good: #4ade80;
+    --good-bg: #14291d;
+    --bad: #fb7185;
+    --bad-bg: #2b1420;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 60% 40% at 15% 0%, rgba(232, 121, 249, 0.08), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 100% 100%, rgba(167, 139, 250, 0.07), transparent 60%);
+  }
+
+  ::selection { background: var(--accent); color: #1a0a20; }
+
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(2rem, 6vw, 6.5rem) clamp(1.5rem, 8vw, 8rem);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(24px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide { transition: opacity 0.01s linear; transform: none !important; }
+  }
+
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .slide.leaving-back { transform: translateX(-24px); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 1.4em;
+    height: 1px;
+    background: var(--accent-dim);
+    display: inline-block;
+  }
+
+  h1, h2 {
+    font-family: var(--mono);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 1.1rem;
+  }
+
+  h1 { font-size: clamp(2.4rem, 5.4vw, 4.6rem); }
+  h2 { font-size: clamp(1.8rem, 3.6vw, 3rem); }
+
+  .lede {
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    color: var(--muted);
+    max-width: 44ch;
+    line-height: 1.55;
+    margin: 0 0 1.5rem;
+  }
+
+  .body-text {
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: #d9cfe6;
+    max-width: 58ch;
+  }
+
+  .body-text + .body-text { margin-top: 0.9em; }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    width: 100%;
+    max-width: 1400px;
+  }
+
+  .split-text { max-width: 52ch; }
+
+  /* ---------- title slide ---------- */
+  .slide-title {
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .brand-mark {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--muted-2);
+    letter-spacing: 0.08em;
+    margin-bottom: 2.2rem;
+  }
+
+  .brand-mark strong { color: var(--accent-2); }
+
+  .title-headline {
+    font-size: clamp(2.8rem, 7vw, 5.6rem);
+  }
+
+  .title-sub {
+    font-family: var(--sans);
+    font-size: clamp(1.1rem, 1.9vw, 1.5rem);
+    color: var(--muted);
+    max-width: 38ch;
+    line-height: 1.5;
+  }
+
+  .accent-underline {
+    color: var(--ink);
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    background-size: 100% 3px;
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    padding-bottom: 0.06em;
+  }
+
+  /* ---------- diff mock ---------- */
+  .diff-mock {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    max-width: 480px;
+  }
+
+  .diff-row {
+    padding: 0.55em 1em;
+    white-space: pre;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .diff-row:last-child { border-bottom: none; }
+  .diff-row.file { color: var(--muted-2); background: var(--bg-raised-2); }
+  .diff-row.add { color: var(--good); background: rgba(74, 222, 128, 0.06); }
+  .diff-row.del { color: var(--bad); background: rgba(251, 113, 133, 0.06); }
+  .diff-row.miss { color: var(--muted-2); font-style: italic; }
+
+  /* ---------- pillars ---------- */
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    max-width: 1200px;
+    margin-top: 0.5rem;
+  }
+
+  .pillar {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.6rem 1.5rem;
+  }
+
+  .pillar .num {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--accent-2);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.9rem;
+    display: block;
+  }
+
+  .pillar h3 {
+    font-family: var(--sans);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+
+  .pillar p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ---------- browser chrome mock ---------- */
+  .chrome {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .chrome-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.7rem 1rem;
+    background: var(--bg-raised-2);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .chrome-dots { display: flex; gap: 6px; }
+  .chrome-dots span {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--line);
+  }
+
+  .chrome-url {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted-2);
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.3em 0.8em;
+    flex: 1;
+  }
+
+  .chrome-body { padding: 1.2rem 1.3rem 1.4rem; }
+
+  .mock-tabs {
+    display: flex;
+    gap: 1.1rem;
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--muted-2);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.7rem;
+    margin-bottom: 1rem;
+  }
+
+  .mock-tabs .on {
+    color: var(--accent);
+    font-weight: 600;
+    position: relative;
+  }
+
+  .mock-tabs .on::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -0.72rem;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .mock-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+
+  .mock-input {
+    flex: 1;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.5em 0.7em;
+  }
+
+  .mock-btn {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1a0a20;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 0.5em 1em;
+    white-space: nowrap;
+  }
+
+  .mock-btn.outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+  }
+
+  .mock-btn.violet {
+    background: var(--accent-2);
+    color: #150c2b;
+  }
+
+  .mock-btn.bad {
+    background: var(--bad);
+    color: #2b0812;
+  }
+
+  .badge-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
+
+  .badge {
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.28em 0.75em;
+    border-radius: 999px;
+    background: var(--bg-raised-2);
+    color: var(--muted);
+  }
+
+  .badge.accent { background: rgba(232, 121, 249, 0.14); color: var(--accent); }
+  .badge.violet { background: rgba(167, 139, 250, 0.14); color: var(--accent-2); }
+  .badge.good { background: var(--good-bg); color: var(--good); }
+  .badge.neutral { background: var(--bg-raised-2); color: var(--muted-2); }
+
+  .mock-card {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .mock-card:last-child { margin-bottom: 0; }
+
+  .mock-card .title { font-size: 0.86rem; font-weight: 600; margin-bottom: 0.15rem; }
+  .mock-card .path {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted-2);
+    margin-bottom: 0.5rem;
+  }
+
+  .mock-summary {
+    font-size: 0.82rem;
+    color: #cfc3dd;
+    line-height: 1.55;
+    margin-bottom: 0.7rem;
+  }
+
+  .mock-affected {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+
+  /* github comment mock */
+  .gh-comment {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gh-comment-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1rem;
+    background: var(--bg-raised-2);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--sans);
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+
+  .gh-avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    flex-shrink: 0;
+  }
+
+  .gh-comment-body { padding: 1rem 1.1rem; font-size: 0.82rem; line-height: 1.7; }
+  .gh-comment-body .h { font-weight: 700; margin-bottom: 0.6em; }
+  .gh-comment-body b { color: var(--ink); }
+  .gh-comment-body .muted-line { color: var(--muted); }
+
+  /* draft card expanded */
+  .mock-card.expanded { padding: 1rem 1.1rem; }
+  .mock-preview {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: var(--bg-raised-2);
+    border-radius: 6px;
+    padding: 0.7rem 0.8rem;
+    line-height: 1.6;
+    margin-bottom: 0.9rem;
+    max-height: 90px;
+    overflow: hidden;
+  }
+
+  .btn-row { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+
+  /* header bar mock */
+  .headerbar-mock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.1rem;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  .who { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--muted); }
+
+  /* ---------- terminal ---------- */
+  .terminal {
+    font-family: var(--mono);
+    font-size: 0.86rem;
+    line-height: 1.85;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.3rem 1.5rem;
+    max-width: 640px;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .terminal .prompt { color: var(--accent-2); }
+  .terminal .cmd { color: var(--ink); }
+  .terminal .branch { color: var(--muted-2); }
+  .terminal .tag { color: var(--accent); }
+  .terminal .desc { color: var(--muted); }
+
+  /* ---------- closing ---------- */
+  .slide-closing { align-items: flex-start; justify-content: center; }
+  .closing-kicker {
+    font-family: var(--mono);
+    font-size: 4.5rem;
+    color: var(--line);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  /* ---------- nav ---------- */
+  .nav {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem clamp(1.5rem, 8vw, 8rem);
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  .nav > * { pointer-events: auto; }
+
+  .nav-count {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted-2);
+    letter-spacing: 0.08em;
+  }
+
+  .nav-count strong { color: var(--muted); }
+
+  .dots { display: flex; gap: 0.5rem; }
+
+  .dots button {
+    width: 22px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--line);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.25s ease, width 0.25s ease;
+  }
+
+  .dots button:hover { background: var(--muted-2); }
+  .dots button.on { background: var(--accent); width: 30px; }
+  .dots button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .arrows { display: flex; gap: 0.5rem; }
+
+  .arrow-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--bg-raised);
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .arrow-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .arrow-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .arrow-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .progress-line {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    z-index: 21;
+    transition: width 0.45s ease;
+  }
+
+  @media (max-width: 860px) {
+    .split { grid-template-columns: 1fr; }
+    .pillars { grid-template-columns: 1fr; }
+    body { overflow-y: auto; }
+    .slide { position: relative; height: auto; min-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<div class="progress-line" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1: TITLE -->
+  <section class="slide slide-title active" data-index="0">
+    <div class="brand-mark">notify-hub-app · <strong>docs-ai</strong></div>
+    <h1 class="title-headline"><span class="accent-underline">Notify</span></h1>
+    <p class="title-sub">Un asistente de IA que vive adentro de tus Pull Requests: detecta cuándo la documentación quedó atrás, la redacta, y solo la publica si vos decís que sí.</p>
+  </section>
+
+  <!-- 2: PROBLEM -->
+  <section class="slide" data-index="1">
+    <div class="split">
+      <div class="split-text">
+        <p class="eyebrow">El problema</p>
+        <h2>El código avanza. Los docs, no.</h2>
+        <p class="body-text">Se agrega un endpoint, se cambia un comportamiento, se refactoriza un módulo entero — y nadie actualiza la documentación. No hay ningún proceso que lo obligue.</p>
+        <p class="body-text">Con el tiempo, el equipo deja de confiar en los docs y empieza a leer directamente el código fuente para saber qué hace algo.</p>
+      </div>
+      <div class="diff-mock">
+        <div class="diff-row file">app/api/notifications/route.ts</div>
+        <div class="diff-row add">+ export async function POST(request: Request) {</div>
+        <div class="diff-row add">+   const { email, message } = Notification...</div>
+        <div class="diff-row file">docs/api.md</div>
+        <div class="diff-row miss">  (sin cambios — nadie lo tocó)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3: SOLUTION -->
+  <section class="slide" data-index="2">
+    <p class="eyebrow">La solución</p>
+    <h2>Un asistente que vive adentro del flujo de PRs</h2>
+    <p class="lede">No es un chatbot aparte. Se integra al proceso que el equipo ya usa.</p>
+    <div class="pillars">
+      <div class="pillar">
+        <span class="num">01 · Analiza</span>
+        <h3>Cada Pull Request</h3>
+        <p>Impacto, si requiere doc, si ya la actualizó, y qué archivos afecta — automático en cada push.</p>
+      </div>
+      <div class="pillar">
+        <span class="num">02 · Genera</span>
+        <h3>Lo que nunca se escribió</h3>
+        <p>Detecta módulos sin documentación y redacta un primer borrador, sin mandar el repo entero.</p>
+      </div>
+      <div class="pillar">
+        <span class="num">03 · Controlás vos</span>
+        <h3>Nada se publica solo</h3>
+        <p>Cada borrador se acepta, edita o rechaza a mano antes de convertirse en un PR real.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4: DEMO A -->
+  <section class="slide" data-index="3">
+    <div class="split">
+      <div class="split-text">
+        <p class="eyebrow">Demo A</p>
+        <h2>Analizar un PR a demanda</h2>
+        <p class="body-text">Poné el número de un Pull Request y obtené, en segundos, un veredicto claro: impacto, si necesita doc, y sugerencias concretas con contenido propuesto.</p>
+      </div>
+      <div class="chrome">
+        <div class="chrome-bar">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <div class="chrome-url">notify-hub-app.vercel.app</div>
+        </div>
+        <div class="chrome-body">
+          <div class="mock-tabs">
+            <span class="on">Analizar PR</span><span>Documentación inicial</span><span>Pull Requests</span>
+          </div>
+          <div class="mock-row">
+            <div class="mock-input">3</div>
+            <button class="mock-btn">Analizar ahora</button>
+          </div>
+          <div class="badge-row">
+            <span class="badge violet">Impacto: medio</span>
+            <span class="badge accent">Requiere actualizar docs</span>
+            <span class="badge neutral">Confianza: 95%</span>
+          </div>
+          <p class="mock-summary">Se agregó un nuevo endpoint POST /api/notifications con validación de request usando Zod.</p>
+          <p class="mock-affected">Documentos afectados: docs/api.md</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: DEMO B -->
+  <section class="slide" data-index="4">
+    <div class="split">
+      <div class="split-text">
+        <p class="eyebrow">Demo B</p>
+        <h2>Automático en cada push</h2>
+        <p class="body-text">Un webhook escucha cada apertura, commit y merge. El sistema comenta directo en el PR — y si vuelven a pushear, <em>edita ese mismo comentario</em> en vez de duplicarlo.</p>
+      </div>
+      <div class="gh-comment">
+        <div class="gh-comment-head">
+          <div class="gh-avatar"></div>
+          docs-ai comentó · hace 2 minutos
+        </div>
+        <div class="gh-comment-body">
+          <div class="h">📄 Análisis de documentación</div>
+          <div class="muted-line"><b>Resumen:</b> Se agregó documentación del componente Home Page.</div>
+          <div class="muted-line"><b>Impacto:</b> Bajo</div>
+          <div class="muted-line"><b>Motivo:</b> Este cambio no requiere actualizar documentación adicional.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6: DEMO C -->
+  <section class="slide" data-index="5">
+    <div class="split">
+      <div class="split-text">
+        <p class="eyebrow">Demo C</p>
+        <h2>Generar documentación inicial</h2>
+        <p class="body-text">Un botón analiza el repo, agrupa el código en módulos, compara contra lo ya documentado, y redacta un borrador para cada módulo huérfano.</p>
+      </div>
+      <div class="chrome">
+        <div class="chrome-bar">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <div class="chrome-url">notify-hub-app.vercel.app</div>
+        </div>
+        <div class="chrome-body">
+          <div class="mock-tabs">
+            <span>Analizar PR</span><span class="on">Documentación inicial</span><span>Pull Requests</span>
+          </div>
+          <div class="mock-row">
+            <button class="mock-btn">Generar documentación inicial</button>
+          </div>
+          <div class="mock-card">
+            <div class="title">Analysis Module Documentation</div>
+            <div class="path">docs/analysis.md</div>
+            <div class="badge-row" style="margin-bottom:0;">
+              <span class="badge neutral">Propuesto</span>
+              <span class="badge neutral">Sin PR</span>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="title">Home Page Component Documentation</div>
+            <div class="path">docs/components/home-page.md</div>
+            <div class="badge-row" style="margin-bottom:0;">
+              <span class="badge neutral">Propuesto</span>
+              <span class="badge neutral">Sin PR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7: DEMO D -->
+  <section class="slide" data-index="6">
+    <div class="split">
+      <div class="split-text">
+        <p class="eyebrow">Demo D</p>
+        <h2>Revisar, editar y publicar de verdad</h2>
+        <p class="body-text">Cada borrador se edita en vivo con vista previa renderizada. Aceptar no publica nada — recién ahí aparece la opción de abrir el Pull Request real en GitHub.</p>
+      </div>
+      <div class="chrome">
+        <div class="chrome-bar">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <div class="chrome-url">notify-hub-app.vercel.app</div>
+        </div>
+        <div class="chrome-body">
+          <div class="mock-card expanded">
+            <div class="title">Analysis Module Documentation</div>
+            <div class="path">docs/analysis.md</div>
+            <div class="mock-preview"># Analysis Module
+
+The `lib/analysis` module provides tools to
+analyze code changes and evaluate their impact
+on documentation...</div>
+            <div class="btn-row">
+              <button class="mock-btn outline">Guardar edición</button>
+              <button class="mock-btn">Aceptar</button>
+              <button class="mock-btn bad">Rechazar</button>
+              <span class="badge good">PR #4 creado</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8: MULTI-USER -->
+  <section class="slide" data-index="7">
+    <div class="split">
+      <div class="split-text">
+        <p class="eyebrow">Colaboración</p>
+        <h2>Cada persona publica a su nombre</h2>
+        <p class="body-text">Login con GitHub vía OAuth: los PRs que se crean quedan atribuidos al colaborador que los generó, no a una cuenta compartida.</p>
+        <p class="body-text">Si alguien nuevo entra sin acceso, un botón abre un Issue asignado al dueño del repo — GitHub avisa por email. Vos aprobás manualmente, nada queda automático.</p>
+      </div>
+      <div class="headerbar-mock">
+        <button class="mock-btn outline">Solicitar acceso de colaborador</button>
+        <div class="who">
+          <div class="gh-avatar" style="width:22px;height:22px;"></div>
+          lucia · <button class="mock-btn outline" style="padding:0.35em 0.8em;">Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9: ARCHITECTURE -->
+  <section class="slide" data-index="8">
+    <p class="eyebrow">Cómo está armado</p>
+    <h2>Una capa por responsabilidad</h2>
+    <div class="terminal">
+<span class="prompt">$</span> <span class="cmd">tree</span> <span class="branch">arquitectura/</span>
+├── frontend/&nbsp;&nbsp;&nbsp;<span class="tag">Next.js 16 · App Router · TypeScript</span>
+├── motor/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc">analyzeChange() — igual para manual y webhook</span>
+├── ia/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc">AIClient → GeminiClient (swappable)</span>
+├── db/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc">PostgreSQL en Railway + Prisma</span>
+├── github/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc">Octokit — diffs, comentarios, ramas, PRs</span>
+├── auth/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc">Auth.js — OAuth GitHub, por usuario</span>
+└── deploy/&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc">Vercel (app) + Railway (DB)</span>
+    </div>
+  </section>
+
+  <!-- 10: CLOSING -->
+  <section class="slide slide-closing" data-index="9">
+    <div class="closing-kicker">$_</div>
+    <h2>Ahora, en vivo.</h2>
+    <p class="lede">Volvamos al dashboard real para recorrer cada una de estas pantallas con datos de verdad.</p>
+  </section>
+
+</div>
+
+<div class="nav">
+  <div class="nav-count"><strong id="cur">01</strong> / 10</div>
+  <div class="dots" id="dots"></div>
+  <div class="arrows">
+    <button class="arrow-btn" id="prev" aria-label="Slide anterior">←</button>
+    <button class="arrow-btn" id="next" aria-label="Slide siguiente">→</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var total = slides.length;
+    var current = 0;
+
+    var dotsWrap = document.getElementById('dots');
+    slides.forEach(function (_, i) {
+      var b = document.createElement('button');
+      b.setAttribute('aria-label', 'Ir a slide ' + (i + 1));
+      b.addEventListener('click', function () { goTo(i); });
+      dotsWrap.appendChild(b);
+    });
+    var dots = Array.prototype.slice.call(dotsWrap.children);
+
+    var curEl = document.getElementById('cur');
+    var progress = document.getElementById('progress');
+    var prevBtn = document.getElementById('prev');
+    var nextBtn = document.getElementById('next');
+
+    function render() {
+      slides.forEach(function (s, i) {
+        s.classList.toggle('active', i === current);
+      });
+      dots.forEach(function (d, i) { d.classList.toggle('on', i === current); });
+      curEl.textContent = String(current + 1).padStart(2, '0');
+      progress.style.width = ((current + 1) / total * 100) + '%';
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === total - 1;
+    }
+
+    function goTo(i) {
+      current = Math.max(0, Math.min(total - 1, i));
+      render();
+    }
+
+    prevBtn.addEventListener('click', function () { goTo(current - 1); });
+    nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); goTo(current + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(current - 1); }
+      else if (e.key === 'Home') { goTo(0); }
+      else if (e.key === 'End') { goTo(total - 1); }
+    });
+
+    var touchStartX = null;
+    window.addEventListener('touchstart', function (e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+    window.addEventListener('touchend', function (e) {
+      if (touchStartX === null) return;
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 60) goTo(current + (dx < 0 ? 1 : -1));
+      touchStartX = null;
+    }, { passive: true });
+
+    render();
+  })();
+</script>
+</body>
+</html>

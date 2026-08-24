@@ -57,7 +57,7 @@ export default function Home() {
       <WebhookNotifications />
       <main className="flex w-full max-w-6xl flex-col gap-6 px-6 py-16 sm:px-10 lg:px-16">
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
-          PR Documentation Analyzer
+          Notify
         </h1>
 
         <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800">
