@@ -22,7 +22,7 @@ export default function RequestCollaboratorButton({
       const data: { ok: boolean; issueUrl?: string; error?: string } = await res.json();
       if (data.ok) {
         setStatus("sent");
-        setMessage("Solicitud enviada — el dueño del repo la va a revisar.");
+        setMessage("Solicitud enviada — te van a avisar por email cuando la revisen.");
       } else {
         setStatus("error");
         setMessage(data.error ?? "No se pudo enviar la solicitud");
